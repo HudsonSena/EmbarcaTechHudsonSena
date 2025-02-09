@@ -10,11 +10,8 @@
 //
 #include "hardware/adc.h"
 
-#define LED_R_PIN 13
-#define LED_G_PIN 11
-#define LED_B_PIN 12
-
 //
+#define BTN_JOY 22
 const uint I2C_SDA = 14;
 const uint I2C_SCL = 15;
 
@@ -29,11 +26,55 @@ struct render_area frame_area = {
 //
 uint8_t ssd[ssd1306_buffer_length];
 
-//
-void set_leds(bool red, bool green, bool blue){
-    gpio_put(LED_R_PIN, red);
-    gpio_put(LED_G_PIN, green);
-    gpio_put(LED_B_PIN, blue);
+void PrintOut1(){
+    memset(ssd, 0, ssd1306_buffer_length);
+    char *text[] = {
+        "",
+        "    opcao 1  ",
+        "",
+        "  x Sair  ",
+    };
+    int y = 0;
+    for(uint i = 0; i < count_of(text); i++)
+    {
+        ssd1306_draw_string(ssd, 5, y, text[i]);
+        y += 8;
+    }
+    render_on_display(ssd, &frame_area);    
+}
+
+void PrintOut2(){
+    memset(ssd, 0, ssd1306_buffer_length);
+    char *text[] = {
+        "",
+        "    opcao 2  ",
+        "",
+        "  x Sair  ",
+    };
+    int y = 0;
+    for(uint i = 0; i < count_of(text); i++)
+    {
+        ssd1306_draw_string(ssd, 5, y, text[i]);
+        y += 8;
+    }
+    render_on_display(ssd, &frame_area);    
+}
+
+void PrintOut3(){
+    memset(ssd, 0, ssd1306_buffer_length);
+    char *text[] = {
+        "",
+        "    opcao 3  ",
+        "",
+        "  x Sair  ",
+    };
+    int y = 0;
+    for(uint i = 0; i < count_of(text); i++)
+    {
+        ssd1306_draw_string(ssd, 5, y, text[i]);
+        y += 8;
+    }
+    render_on_display(ssd, &frame_area);    
 }
 
 void MenuPrint1(){
@@ -108,15 +149,15 @@ char positionJoy(){
     }
 }
 
+volatile bool in_loop = false;
+
+void button_pressed_callback(uint gpio, uint32_t events) {
+    in_loop = !in_loop;
+}
+
 //
 int main(){
     stdio_init_all();
-    gpio_init(LED_R_PIN);
-    gpio_set_dir(LED_R_PIN, GPIO_OUT);
-    gpio_init(LED_G_PIN);
-    gpio_set_dir(LED_G_PIN, GPIO_OUT);
-    gpio_init(LED_B_PIN);
-    gpio_set_dir(LED_B_PIN, GPIO_OUT);
 
     adc_init();
 
@@ -128,7 +169,12 @@ int main(){
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_SDA);
-    gpio_pull_up(I2C_SCL);
+    gpio_pull_up(I2C_SCL);    
+
+    const uint RED_LED_PIN = 11;
+    gpio_init(RED_LED_PIN);
+    gpio_set_dir(RED_LED_PIN, GPIO_OUT);
+    gpio_put(RED_LED_PIN, 0);
 
     ssd1306_init();
 
@@ -138,44 +184,94 @@ int main(){
     render_on_display(ssd, &frame_area);
 
     //
-    MenuPrint1();
+    MenuPrint1();   
+
+    gpio_init(BTN_JOY);
+    gpio_set_dir(BTN_JOY, GPIO_IN);
+    gpio_pull_up(BTN_JOY);
+
+    gpio_set_irq_enabled_with_callback(BTN_JOY, GPIO_IRQ_EDGE_FALL, true, &button_pressed_callback);    
+    
     
     int opcao = 1;
 
     while (1){
-        char joySelect = positionJoy();
+        char joySelect = positionJoy();                
 
         if(joySelect == 'C'){
-            set_leds(1, 0, 0);
             if(opcao > 0){
                 opcao = opcao - 1;
             }
         } else if(joySelect == 'B'){
-            set_leds(0, 1, 0);
             if(opcao < 3){
                 opcao = opcao + 1;
             }
         } else{
-            set_leds(0, 0, 0);
         }
 
         //
         switch (opcao){
             case 1:
                 MenuPrint1();
-                break;
-
+                if( gpio_get(BTN_JOY) == 0 && opcao == 1){
+                    in_loop = !in_loop;
+                    sleep_ms(300);
+                    PrintOut1();
+                    while (in_loop) {
+                        if(gpio_get(BTN_JOY) == 0){
+                            in_loop = false;
+                            sleep_ms(300);                            
+                        }
+                        sleep_ms(500);
+                        gpio_put(RED_LED_PIN, !gpio_get(RED_LED_PIN));
+                    }
+                    
+                } else{
+                    break;
+                }
             case 2:
                 MenuPrint2();
-                break;
+                if( gpio_get(BTN_JOY) == 0 && opcao == 2){
+                    in_loop = !in_loop;
+                    sleep_ms(300);
+                    PrintOut2();
+                    while (in_loop) {
+                        if(gpio_get(BTN_JOY) == 0){
+                            in_loop = false;
+                            sleep_ms(300);                            
+                        }
+                        sleep_ms(500);
+                        gpio_put(RED_LED_PIN, !gpio_get(RED_LED_PIN));
+                    }
+                    
+                } else{
+                    break;
+                }
             
             case 3:
                 MenuPrint3();
-                break;
+                if( gpio_get(BTN_JOY) == 0 && opcao == 3){
+                    in_loop = !in_loop;
+                    sleep_ms(300);
+                    PrintOut3();
+                    while (in_loop) {
+                        if(gpio_get(BTN_JOY) == 0){
+                            in_loop = false;
+                            sleep_ms(300);                            
+                        }
+                        sleep_ms(500);
+                        gpio_put(RED_LED_PIN, !gpio_get(RED_LED_PIN));
+                    }
+                    
+                } else{
+                    break;
+                }
             
             default:
                 break;
         }
+        
     }
+
     
 }

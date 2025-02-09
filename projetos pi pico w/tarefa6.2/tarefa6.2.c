@@ -6,11 +6,19 @@
 #include "pico/binary_info.h"
 #include "inc/ssd1306.h"
 #include "hardware/i2c.h"
+
+//
 #include "hardware/adc.h"
 
+#define LED_R_PIN 13
+#define LED_G_PIN 11
+#define LED_B_PIN 12
+
+//
 const uint I2C_SDA = 14;
 const uint I2C_SCL = 15;
 
+//
 struct render_area frame_area = {
     start_column: 0,
     end_column: ssd1306_width - 1,
@@ -18,7 +26,15 @@ struct render_area frame_area = {
     end_page: ssd1306_n_pages -1
 };
 
+//
 uint8_t ssd[ssd1306_buffer_length];
+
+//
+void set_leds(bool red, bool green, bool blue){
+    gpio_put(LED_R_PIN, red);
+    gpio_put(LED_G_PIN, green);
+    gpio_put(LED_B_PIN, blue);
+}
 
 void MenuPrint1(){
     char *text[] = {
@@ -38,6 +54,7 @@ void MenuPrint1(){
     render_on_display(ssd, &frame_area);
 }
 
+//
 void MenuPrint2(){
     char *text[] = {
         "",
@@ -56,6 +73,7 @@ void MenuPrint2(){
     render_on_display(ssd, &frame_area);
 }
 
+//
 void MenuPrint3(){
     char *text[] = {
         "",
@@ -74,6 +92,7 @@ void MenuPrint3(){
     render_on_display(ssd, &frame_area);
 }
 
+//
 char positionJoy(){
     adc_select_input(0);
     uint adc_y_raw = adc_read();
@@ -89,12 +108,22 @@ char positionJoy(){
     }
 }
 
+//
 int main(){
     stdio_init_all();
+    gpio_init(LED_R_PIN);
+    gpio_set_dir(LED_R_PIN, GPIO_OUT);
+    gpio_init(LED_G_PIN);
+    gpio_set_dir(LED_G_PIN, GPIO_OUT);
+    gpio_init(LED_B_PIN);
+    gpio_set_dir(LED_B_PIN, GPIO_OUT);
+
     adc_init();
+
     adc_gpio_init(26);
     adc_gpio_init(27);
 
+    //
     i2c_init(i2c1, ssd1306_i2c_clock * 1000);
     gpio_set_function(I2C_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_SCL, GPIO_FUNC_I2C);
@@ -108,6 +137,7 @@ int main(){
     memset(ssd, 0, ssd1306_buffer_length);
     render_on_display(ssd, &frame_area);
 
+    //
     MenuPrint1();
     
     int opcao = 1;
@@ -116,10 +146,12 @@ int main(){
         char joySelect = positionJoy();
 
         if(joySelect == 'C'){
+            set_leds(1, 0, 0);
             if(opcao > 0){
                 opcao = opcao - 1;
             }
         } else if(joySelect == 'B'){
+            set_leds(0, 1, 0);
             if(opcao < 3){
                 opcao = opcao + 1;
             }

@@ -49,7 +49,8 @@ target_link_libraries(mentoria04_02_2025
         pico_stdlib
         hardware_i2c
         hardware_adc
-        hardware_clocks)
+        hardware_clocks
+        hardware_pwm)
 
 # Add the standard include files to the build
 target_include_directories(mentoria04_02_2025 PRIVATE
@@ -60,7 +61,8 @@ target_include_directories(mentoria04_02_2025 PRIVATE
 target_link_libraries(mentoria04_02_2025 
         hardware_i2c
         hardware_adc
-        hardware_clocks        
+        hardware_clocks
+        hardware_pwm        
         )
 
 pico_add_extra_outputs(mentoria04_02_2025)
