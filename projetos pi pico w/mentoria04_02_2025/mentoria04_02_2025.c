@@ -259,7 +259,7 @@ int main(){
                             break;
                         }
                         
-                        play_star_wars(BUZZER_PIN);
+                        play_star_wars(BUZZER_PIN, &in_loop);
                     }
                     break;
                     

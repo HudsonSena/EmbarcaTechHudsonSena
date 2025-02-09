@@ -42,7 +42,7 @@ void pwm_init_buzzer(uint pin) {
 }
 
 // Toca uma nota com a frequência e duração especificadas
-void play_tone(uint pin, uint frequency, uint duration_ms) {
+void play_tone(uint pin, uint frequency, uint duration_ms) {    
     uint slice_num = pwm_gpio_to_slice_num(pin);
     uint32_t clock_freq = clock_get_hz(clk_sys);
     uint32_t top = clock_freq / frequency - 1;
@@ -54,12 +54,18 @@ void play_tone(uint pin, uint frequency, uint duration_ms) {
 
     pwm_set_gpio_level(pin, 0); // Desliga o som após a duração
     sleep_ms(50); // Pausa entre notas
+    
+    
 }
 
 // Função principal para tocar a música Star Wars
-void play_star_wars(uint pin) {
+void play_star_wars(uint pin, bool *in_loop) {
     for (int i = 0; i < sizeof(star_wars_notes) / sizeof(star_wars_notes[0]); i++) {
-        if (star_wars_notes[i] == 0) {
+        if(*in_loop == false){
+            pwm_set_gpio_level(pin, 0);
+            return;
+        }
+        else if (star_wars_notes[i] == 0) {
             sleep_ms(note_duration[i]);
         } else {
             play_tone(pin, star_wars_notes[i], note_duration[i]);

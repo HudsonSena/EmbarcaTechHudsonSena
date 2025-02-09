@@ -20,6 +20,6 @@ void pwm_init_buzzer(uint pin);
 void play_tone(uint pin, uint frequency, uint duration_ms);
 
 // Função para tocar a música Star Wars
-void play_star_wars(uint pin);
+void play_star_wars(uint pin, bool *in_loop);
 
 #endif // BUZZER_H
