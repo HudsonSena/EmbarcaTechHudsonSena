@@ -186,9 +186,6 @@ int main(){
     memset(ssd, 0, ssd1306_buffer_length);
     render_on_display(ssd, &frame_area);
 
-    //
-    MenuPrint1();   
-
     gpio_init(BTN_JOY);
     gpio_set_dir(BTN_JOY, GPIO_IN);
     gpio_pull_up(BTN_JOY);
@@ -212,20 +209,19 @@ int main(){
         } else{
         }
 
-        //
         switch (opcao){
-            case 1:
+            case 1:                
                 MenuPrint1();
-                if( gpio_get(BTN_JOY) == 0 && opcao == 1){
-                    in_loop = !in_loop;
-                    sleep_ms(500);
-                    PrintOut1();                    
+                if( gpio_get(BTN_JOY) == 0 && opcao == 1){              
+                    in_loop = !in_loop;                   
+                    sleep_ms(300); 
+                    PrintOut1();
 
                     while (in_loop)
                     {
                         if(gpio_get(BTN_JOY) == 0){                            
                             in_loop = false;
-                            sleep_ms(1000);
+                            sleep_ms(500);                       
                             break;
                         }
 
@@ -235,7 +231,7 @@ int main(){
                         joystick_read_axis(&vrx_value, &vry_value);
                         pwm_set_gpio_level(LED_B, vrx_value);
                         pwm_set_gpio_level(LED_R, vry_value);
-                        sleep_ms(100);
+                        sleep_ms(500);
                     }
 
                     setup_pwm_led(LED_B, &slice_led_b, 0);
@@ -245,20 +241,21 @@ int main(){
                 } else{
                     break;
                 }
+                break;
 
             case 2:
                 MenuPrint2();
-                if( gpio_get(BTN_JOY) == 0 && opcao == 2){
+                if( gpio_get(BTN_JOY) == 0 && opcao == 2){                    
                     in_loop = !in_loop;
-                    sleep_ms(500);
+                    sleep_ms(300);
                     PrintOut2();
 
                     pwm_init_buzzer(BUZZER_PIN);
 
                     while (in_loop) {
                         if(gpio_get(BTN_JOY) == 0){
-                            in_loop = false;
-                            sleep_ms(1000);
+                            sleep_ms(500);
+                            in_loop = false;                            
                             break;
                         }
                         
@@ -269,27 +266,29 @@ int main(){
                 } else{
                     break;
                 }
+                break;
             
             case 3:
                 MenuPrint3();
                 if( gpio_get(BTN_JOY) == 0 && opcao == 3){
                     in_loop = !in_loop;
-                    sleep_ms(500);
+                    sleep_ms(300);
                     PrintOut3();
+
                     uint up_down = 1;
 
                     while (in_loop)
                     {
                         if(gpio_get(BTN_JOY) == 0){
-                            in_loop = false;
-                            sleep_ms(1000);
+                            sleep_ms(500);
+                            in_loop = false;                            
                             break;
                         }                        
                         setup_pwm();
 
                         pwm_set_gpio_level(LED, led_level);
                         sleep_ms(1000);
-                        adjust_led_brightness(up_down);
+                        adjust_led_brightness(&up_down);
                     }
                     pwm_set_gpio_level(LED, 0);
                     break;                
@@ -297,6 +296,7 @@ int main(){
                 } else{
                     break;
                 }
+                break;
             
             default:
                 break;
