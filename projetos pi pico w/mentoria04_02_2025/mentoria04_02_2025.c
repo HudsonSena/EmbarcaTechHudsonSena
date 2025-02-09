@@ -7,6 +7,9 @@
 #include "inc/ssd1306.h"
 #include "hardware/i2c.h"
 
+#include "Joystick_led/joystick.h"
+#include "buzzer/buzzer.h"
+#include "led_pwm/led_pwm.h"
 //
 #include "hardware/adc.h"
 
@@ -149,10 +152,10 @@ char positionJoy(){
     }
 }
 
-volatile bool in_loop = false;
+volatile bool in_loop = true;
 
 void button_pressed_callback(uint gpio, uint32_t events) {
-    in_loop = !in_loop;
+    in_loop = false;
 }
 
 //
@@ -215,34 +218,53 @@ int main(){
                 MenuPrint1();
                 if( gpio_get(BTN_JOY) == 0 && opcao == 1){
                     in_loop = !in_loop;
-                    sleep_ms(300);
-                    PrintOut1();
-                    while (in_loop) {
-                        if(gpio_get(BTN_JOY) == 0){
+                    sleep_ms(500);
+                    PrintOut1();                    
+
+                    while (in_loop)
+                    {
+                        if(gpio_get(BTN_JOY) == 0){                            
                             in_loop = false;
-                            sleep_ms(300);                            
+                            sleep_ms(1000);
+                            break;
                         }
-                        sleep_ms(500);
-                        gpio_put(RED_LED_PIN, !gpio_get(RED_LED_PIN));
+
+                        uint16_t vrx_value, vry_value;
+                        setup();
+
+                        joystick_read_axis(&vrx_value, &vry_value);
+                        pwm_set_gpio_level(LED_B, vrx_value);
+                        pwm_set_gpio_level(LED_R, vry_value);
+                        sleep_ms(100);
                     }
-                    
+
+                    setup_pwm_led(LED_B, &slice_led_b, 0);
+                    setup_pwm_led(LED_R, &slice_led_r, 0);
+                    break;
+
                 } else{
                     break;
                 }
+
             case 2:
                 MenuPrint2();
                 if( gpio_get(BTN_JOY) == 0 && opcao == 2){
                     in_loop = !in_loop;
-                    sleep_ms(300);
+                    sleep_ms(500);
                     PrintOut2();
+
+                    pwm_init_buzzer(BUZZER_PIN);
+
                     while (in_loop) {
                         if(gpio_get(BTN_JOY) == 0){
                             in_loop = false;
-                            sleep_ms(300);                            
+                            sleep_ms(1000);
+                            break;
                         }
-                        sleep_ms(500);
-                        gpio_put(RED_LED_PIN, !gpio_get(RED_LED_PIN));
+                        
+                        play_star_wars(BUZZER_PIN);
                     }
+                    break;
                     
                 } else{
                     break;
@@ -252,16 +274,25 @@ int main(){
                 MenuPrint3();
                 if( gpio_get(BTN_JOY) == 0 && opcao == 3){
                     in_loop = !in_loop;
-                    sleep_ms(300);
+                    sleep_ms(500);
                     PrintOut3();
-                    while (in_loop) {
+                    uint up_down = 1;
+
+                    while (in_loop)
+                    {
                         if(gpio_get(BTN_JOY) == 0){
                             in_loop = false;
-                            sleep_ms(300);                            
-                        }
-                        sleep_ms(500);
-                        gpio_put(RED_LED_PIN, !gpio_get(RED_LED_PIN));
+                            sleep_ms(1000);
+                            break;
+                        }                        
+                        setup_pwm();
+
+                        pwm_set_gpio_level(LED, led_level);
+                        sleep_ms(1000);
+                        adjust_led_brightness(up_down);
                     }
+                    pwm_set_gpio_level(LED, 0);
+                    break;                
                     
                 } else{
                     break;

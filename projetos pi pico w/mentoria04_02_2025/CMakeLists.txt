@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(mentoria04_02_2025 mentoria04_02_2025.c inc/ssd1306_i2c.c)
+add_executable(mentoria04_02_2025 mentoria04_02_2025.c inc/ssd1306_i2c.c Joystick_led/joystick.c buzzer/buzzer.c led_pwm/led_pwm.c)
 
 pico_set_program_name(mentoria04_02_2025 "mentoria04_02_2025")
 pico_set_program_version(mentoria04_02_2025 "0.1")
