@@ -4,9 +4,10 @@
 #include <string.h>
 #include <stdio.h>
 
-#define LED_PIN 12          // Define o pino do LED
-#define WIFI_SSID "POCO X3 Pro"  // Substitua pelo nome da sua rede Wi-Fi
-#define WIFI_PASS "930315dd" // Substitua pela senha da sua rede Wi-Fi
+#define LED_PIN 12
+#define LED_B 11          // Define o pino do LED
+#define WIFI_SSID "Optica Davi"  // Substitua pelo nome da sua rede Wi-Fi
+#define WIFI_PASS "davi54321" // Substitua pela senha da sua rede Wi-Fi
 
 // Buffer para respostas HTTP
 #define HTTP_RESPONSE "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" \
@@ -72,8 +73,11 @@ static void start_http_server(void) {
 
 int main() {
     stdio_init_all();  // Inicializa a saída padrão
-    sleep_ms(10000);
+    sleep_ms(20000);
     printf("Iniciando servidor HTTP\n");
+
+    gpio_init(LED_B);
+    gpio_set_dir(LED_B, GPIO_OUT);
 
     // Inicializa o Wi-Fi
     if (cyw43_arch_init()) {
@@ -85,6 +89,7 @@ int main() {
     printf("Conectando ao Wi-Fi...\n");
 
     if (cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASS, CYW43_AUTH_WPA2_AES_PSK, 10000)) {
+        gpio_put(LED_B, 1);
         printf("Falha ao conectar ao Wi-Fi\n");
         return 1;
     }else {

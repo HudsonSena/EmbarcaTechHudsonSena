@@ -56,6 +56,7 @@ target_include_directories(wifi_led PRIVATE
 # Add any user requested libraries
 target_link_libraries(wifi_led 
         pico_cyw43_arch_lwip_threadsafe_background
+        pico_lwip
         )
 
 pico_add_extra_outputs(wifi_led)
