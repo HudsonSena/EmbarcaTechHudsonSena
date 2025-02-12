@@ -5,8 +5,8 @@
 #include <stdio.h>
 
 #define LED_PIN 12          // Define o pino do LED
-#define WIFI_SSID "NomeDaRedeWiFi"  // Substitua pelo nome da sua rede Wi-Fi
-#define WIFI_PASS "SenhaDaRedeWiFi" // Substitua pela senha da sua rede Wi-Fi
+#define WIFI_SSID "POCO X3 Pro"  // Substitua pelo nome da sua rede Wi-Fi
+#define WIFI_PASS "930315dd" // Substitua pela senha da sua rede Wi-Fi
 
 // Buffer para respostas HTTP
 #define HTTP_RESPONSE "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" \
@@ -18,13 +18,15 @@
 
 // Dados simulados (temperatura e umidade)
 #define THINGSPEAK_URL "http://api.thingspeak.com/update"
-#define CHANNEL_API_KEY "SUA_API_KEY" // Substitua pela sua chave API de escrita
+#define CHANNEL_API_KEY "CCMWPYJM527SXJNM" // Substitua pela sua chave API de escrita
 
-// Função para enviar dados simulados para o ThingSpeak
+// Função para enviar dados simulados para o ThingSpeak no formato JSON
 static void send_data_to_thingspeak(float temperatura, float umidade) {
-    char post_data[128];
+    char post_data[256];
+    
+    // Formato JSON para enviar os dados
     snprintf(post_data, sizeof(post_data),
-             "api_key=%s&field1=%.2f&field2=%.2f", 
+             "{\"api_key\":\"%s\",\"field1\":%.2f,\"field2\":%.2f}",
              CHANNEL_API_KEY, temperatura, umidade);
 
     // Configuração da conexão TCP
@@ -44,19 +46,22 @@ static void send_data_to_thingspeak(float temperatura, float umidade) {
         return;
     }
 
-    // Montar e enviar a requisição POST
+    // Montar e enviar a requisição POST com formato JSON
     char request[512];
     snprintf(request, sizeof(request),
              "POST /update HTTP/1.1\r\n"
              "Host: api.thingspeak.com\r\n"
              "Connection: close\r\n"
-             "Content-Type: application/x-www-form-urlencoded\r\n"
+             "Content-Type: application/json\r\n"
              "Content-Length: %d\r\n\r\n"
              "%s", strlen(post_data), post_data);
 
     // Enviar a requisição
     tcp_write(pcb, request, strlen(request), TCP_WRITE_FLAG_COPY);
     tcp_output(pcb);
+
+    // Esperar a resposta do ThingSpeak (geralmente o status 200 OK)
+    tcp_poll(pcb, NULL, 1);  // Chama tcp_poll sem atribuir a nenhum valor
 
     // Fechar a conexão após o envio
     tcp_close(pcb);
@@ -117,7 +122,7 @@ static void start_http_server(void) {
 
 int main() {
     stdio_init_all();  // Inicializa a saída padrão
-    sleep_ms(10000);
+    sleep_ms(20000);
     printf("Iniciando servidor HTTP\n");
 
     // Inicializa o Wi-Fi
