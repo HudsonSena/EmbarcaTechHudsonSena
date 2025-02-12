@@ -28,45 +28,53 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(TempIdeal C CXX ASM)
+project(temIdealAli C CXX ASM)
+
+set(LWIP_DIR "${PICO_SDK_PATH}/lib/lwip")
+set(LWIP_DIR "${PICO_SDK_PATH}/lib/lwip_tcp")
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(TempIdeal TempIdeal.c http_client/http_client.c)
+add_executable(temIdealAli temIdealAli.c )
 
-pico_set_program_name(TempIdeal "TempIdeal")
-pico_set_program_version(TempIdeal "0.1")
+pico_set_program_name(temIdealAli "temIdealAli")
+pico_set_program_version(temIdealAli "0.1")
 
 # Generate PIO header
-pico_generate_pio_header(TempIdeal ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+pico_generate_pio_header(temIdealAli ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(TempIdeal 1)
-pico_enable_stdio_usb(TempIdeal 1)
+pico_enable_stdio_uart(temIdealAli 0)
+pico_enable_stdio_usb(temIdealAli 1)
+
 
 # Add the standard library to the build
-target_link_libraries(TempIdeal
-        pico_stdlib)
+target_link_libraries(temIdealAli
+        pico_stdlib
+        pico_lwip)
 
 # Add the standard include files to the build
-target_include_directories(TempIdeal PRIVATE
+target_include_directories(temIdealAli PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
 )
 
-
 # Add any user requested libraries
-target_link_libraries(TempIdeal 
+target_link_libraries(temIdealAli 
         hardware_spi
         hardware_i2c
         hardware_pio
         hardware_clocks
         pico_cyw43_arch_lwip_threadsafe_background
         pico_lwip
-        lwip
         )
 
-pico_add_extra_outputs(TempIdeal)
+pico_add_extra_outputs(temIdealAli)
+
+# Configure as opções de compilação do LWIP, caso necessário
+target_compile_definitions(temIdealAli PRIVATE
+    PICO_USE_LWIP
+)
 

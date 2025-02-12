@@ -38,6 +38,6 @@
   "raspberry-pi-pico.ninjaPath": "${HOME}/.pico-sdk/ninja/v1.12.1/ninja",
   "files.associations": {
     "*.embeddedhtml": "html",
-    "sockets.h": "c"
+    "tcp.h": "c"
   }
 }
