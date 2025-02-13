@@ -4,24 +4,15 @@
 #include <string.h>
 #include <stdio.h>
 
-#define LED_PIN 12          // Define o pino do LED
-#define WIFI_SSID "POCO X3 Pro"  // Substitua pelo nome da sua rede Wi-Fi
-#define WIFI_PASS "930315dd" // Substitua pela senha da sua rede Wi-Fi
+#define WIFI_SSID "login do wifi"  // Substitua pelo nome da sua rede Wi-Fi
+#define WIFI_PASS "senha do wifi"     // Substitua pela senha da sua rede Wi-Fi
+#define CHANNEL_API_KEY "sua api do thingspeak" // Substitua pela sua chave API de escrita
 
-// Buffer para respostas HTTP
-#define HTTP_RESPONSE "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n" \
-                      "<!DOCTYPE html><html><body>" \
-                      "<h1>Controle do LED</h1>" \
-                      "<p><a href=\"/led/on\">Ligar LED</a></p>" \
-                      "<p><a href=\"/led/off\">Desligar LED</a></p>" \
-                      "</body></html>\r\n"
+// Variáveis globais para armazenar os dados e a resposta do ThingSpeak
+static float temperatura = 0.0;
+static float umidade = 0.0;
+static char thingspeak_response[512] = "Aguardando resposta do servidor...";
 
-// Dados simulados (temperatura e umidade)
-#define THINGSPEAK_URL "http://api.thingspeak.com/update"
-#define CHANNEL_API_KEY "CCMWPYJM527SXJNM" // Substitua pela sua chave API de escrita
-
-// Função para enviar dados simulados para o ThingSpeak no formato JSON
-// Função para enviar dados para o ThingSpeak no formato correto
 // Callback para processar a resposta do servidor
 static err_t receive_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
     if (!p) {
@@ -29,9 +20,9 @@ static err_t receive_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, e
         return ERR_OK;
     }
 
-    // Exibir resposta no console
-    printf("Resposta do ThingSpeak: %.*s\n", p->len, (char *)p->payload);
-
+    // Armazena a resposta para exibição no servidor HTTP
+    snprintf(thingspeak_response, sizeof(thingspeak_response), "Resposta do ThingSpeak: %.*s", p->len, (char *)p->payload);
+    
     // Liberar o buffer e fechar conexão
     pbuf_free(p);
     tcp_close(tpcb);
@@ -39,7 +30,7 @@ static err_t receive_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, e
 }
 
 // Função para enviar dados para o ThingSpeak e receber resposta
-static void send_data_to_thingspeak(float temperatura, float umidade) {
+static void send_data_to_thingspeak() {
     char post_data[256];
 
     // Formato correto: "api_key=XXXX&field1=XX&field2=XX"
@@ -83,6 +74,8 @@ static void send_data_to_thingspeak(float temperatura, float umidade) {
         printf("Erro ao enviar os dados para o ThingSpeak\n");
         tcp_close(pcb);
         return;
+    } else{
+        printf("Dados enviados para ThingSpeak\n");        
     }
 
     // Garantir que os dados sejam enviados
@@ -92,27 +85,27 @@ static void send_data_to_thingspeak(float temperatura, float umidade) {
     tcp_recv(pcb, receive_callback);
 }
 
-
-
-// Função de callback para processar requisições HTTP
+// Callback para responder requisições HTTP
 static err_t http_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
     if (p == NULL) {
-        // Cliente fechou a conexão
         tcp_close(tpcb);
         return ERR_OK;
     }
 
-    // Processa a requisição HTTP
-    char *request = (char *)p->payload;
-
-    if (strstr(request, "GET /led/on")) {
-        gpio_put(LED_PIN, 1);  // Liga o LED
-    } else if (strstr(request, "GET /led/off")) {
-        gpio_put(LED_PIN, 0);  // Desliga o LED
-    }
+    // Construir a resposta HTTP dinâmica com temperatura, umidade e resposta do ThingSpeak
+    char http_response[1024];
+    snprintf(http_response, sizeof(http_response),
+             "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+             "<!DOCTYPE html><html><body>"
+             "<h1>Monitoramento de Temperatura e Umidade</h1>"
+             "<p><strong>Temperatura:</strong> %.2f°C</p>"
+             "<p><strong>Umidade:</strong> %.2f%%</p>"
+             "<p><strong>%s</strong></p>"
+             "</body></html>\r\n",
+             temperatura, umidade, thingspeak_response);
 
     // Envia a resposta HTTP
-    tcp_write(tpcb, HTTP_RESPONSE, strlen(HTTP_RESPONSE), TCP_WRITE_FLAG_COPY);
+    tcp_write(tpcb, http_response, strlen(http_response), TCP_WRITE_FLAG_COPY);
 
     // Libera o buffer recebido
     pbuf_free(p);
@@ -120,13 +113,13 @@ static err_t http_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_
     return ERR_OK;
 }
 
-// Callback de conexão: associa o http_callback à conexão
+// Callback de conexão para o servidor HTTP
 static err_t connection_callback(void *arg, struct tcp_pcb *newpcb, err_t err) {
     tcp_recv(newpcb, http_callback);  // Associa o callback HTTP
     return ERR_OK;
 }
 
-// Função de setup do servidor TCP
+// Função de setup do servidor HTTP
 static void start_http_server(void) {
     struct tcp_pcb *pcb = tcp_new();
     if (!pcb) {
@@ -147,8 +140,9 @@ static void start_http_server(void) {
 }
 
 int main() {
-    stdio_init_all();  // Inicializa a saída padrão
-    sleep_ms(20000);
+    stdio_init_all();
+    sleep_ms(20000);  // Tempo de inicialização
+
     printf("Iniciando servidor HTTP\n");
 
     // Inicializa o Wi-Fi
@@ -167,26 +161,17 @@ int main() {
         printf("Conectado ao Wi-Fi!\n");
     }
 
-    // Configura o LED como saída
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
-
     // Inicia o servidor HTTP
     start_http_server();
-    
-    // Simula dados de temperatura e umidade
-    float temperatura = 22.5 + (rand() % 100) / 50.0;
-    float umidade = 55.0 + (rand() % 100) / 50.0;
-    
-    // Envia os dados para o ThingSpeak
-    send_data_to_thingspeak(temperatura, umidade);
 
-    // Loop principal
+    // Loop principal enviando dados a cada 16 segundos
     while (true) {
-        cyw43_arch_poll();  // Necessário para manter o Wi-Fi ativo
-        sleep_ms(100);
+        temperatura = 31.5 + (rand() % 100) / 50.0;
+        umidade = 61.5 + (rand() % 100) / 50.0;
+        send_data_to_thingspeak();
+        sleep_ms(60000); // Espera 16 segundos antes de enviar novamente
     }
 
-    cyw43_arch_deinit();  // Desliga o Wi-Fi (não será chamado, pois o loop é infinito)
+    cyw43_arch_deinit();  // Nunca será chamado, pois o loop é infinito
     return 0;
 }
