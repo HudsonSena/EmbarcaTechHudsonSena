@@ -21,52 +21,78 @@
 #define CHANNEL_API_KEY "CCMWPYJM527SXJNM" // Substitua pela sua chave API de escrita
 
 // Função para enviar dados simulados para o ThingSpeak no formato JSON
+// Função para enviar dados para o ThingSpeak no formato correto
+// Callback para processar a resposta do servidor
+static err_t receive_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
+    if (!p) {
+        tcp_close(tpcb);
+        return ERR_OK;
+    }
+
+    // Exibir resposta no console
+    printf("Resposta do ThingSpeak: %.*s\n", p->len, (char *)p->payload);
+
+    // Liberar o buffer e fechar conexão
+    pbuf_free(p);
+    tcp_close(tpcb);
+    return ERR_OK;
+}
+
+// Função para enviar dados para o ThingSpeak e receber resposta
 static void send_data_to_thingspeak(float temperatura, float umidade) {
     char post_data[256];
-    
-    // Formato JSON para enviar os dados
+
+    // Formato correto: "api_key=XXXX&field1=XX&field2=XX"
     snprintf(post_data, sizeof(post_data),
-             "{\"api_key\":\"%s\",\"field1\":%.2f,\"field2\":%.2f}",
+             "api_key=%s&field1=%.2f&field2=%.2f",
              CHANNEL_API_KEY, temperatura, umidade);
 
-    // Configuração da conexão TCP
+    // Criar conexão TCP
     struct tcp_pcb *pcb = tcp_new();
     if (!pcb) {
-        printf("Erro ao criar o PCB\n");
+        printf("Erro ao criar PCB TCP\n");
         return;
     }
 
-    // Conectar ao ThingSpeak (porta HTTP padrão 80)
+    // Endereço IP do ThingSpeak (api.thingspeak.com)
     ip_addr_t ip;
-    IP4_ADDR(&ip, 184, 106, 153, 149);  // IP do ThingSpeak (api.thingspeak.com)
-    
+    IP4_ADDR(&ip, 184, 106, 153, 149);
+
+    // Conectar ao servidor na porta 80
     err_t err = tcp_connect(pcb, &ip, 80, NULL);
     if (err != ERR_OK) {
         printf("Erro ao conectar ao ThingSpeak\n");
+        tcp_close(pcb);
         return;
     }
 
-    // Montar e enviar a requisição POST com formato JSON
+    // Montar a requisição HTTP
     char request[512];
     snprintf(request, sizeof(request),
-             "POST /update HTTP/1.1\r\n"
+             "POST /update.json HTTP/1.1\r\n"
              "Host: api.thingspeak.com\r\n"
              "Connection: close\r\n"
-             "Content-Type: application/json\r\n"
+             "Content-Type: application/x-www-form-urlencoded\r\n"
              "Content-Length: %d\r\n\r\n"
-             "%s", strlen(post_data), post_data);
+             "%s",
+             (int)strlen(post_data), post_data);
 
     // Enviar a requisição
-    tcp_write(pcb, request, strlen(request), TCP_WRITE_FLAG_COPY);
+    err_t send_err = tcp_write(pcb, request, strlen(request), TCP_WRITE_FLAG_COPY);
+    if (send_err != ERR_OK) {
+        printf("Erro ao enviar os dados para o ThingSpeak\n");
+        tcp_close(pcb);
+        return;
+    }
+
+    // Garantir que os dados sejam enviados
     tcp_output(pcb);
 
-    // Esperar a resposta do ThingSpeak (geralmente o status 200 OK)
-    tcp_poll(pcb, NULL, 1);  // Chama tcp_poll sem atribuir a nenhum valor
-
-    // Fechar a conexão após o envio
-    tcp_close(pcb);
-    printf("Dados enviados para o ThingSpeak: Temp=%.2f, Hum=%.2f\n", temperatura, umidade);
+    // Registrar callback para receber resposta
+    tcp_recv(pcb, receive_callback);
 }
+
+
 
 // Função de callback para processar requisições HTTP
 static err_t http_callback(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
