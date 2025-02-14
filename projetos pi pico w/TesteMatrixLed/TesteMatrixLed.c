@@ -3,6 +3,8 @@
 #include "ws2812.pio.h"
 #include "hardware/clocks.h"
 
+//link para estudo da Matrix de led: https://wokwi.com/projects/420545548816358401
+
 // Definições da matriz de LED
 #define LED_PIN 7      // GPIO onde o WS2812 está conectado
 #define LED_COUNT 25   // Número de LEDs na matriz (5x5)
