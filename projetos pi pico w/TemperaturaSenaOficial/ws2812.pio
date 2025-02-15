@@ -1,5 +1,0 @@
-.program ws2812
-.side_set 1
-.wrap_target
-    out x, 24 side 0b1 [7]  ; Envia os bits RGB
-.wrap
